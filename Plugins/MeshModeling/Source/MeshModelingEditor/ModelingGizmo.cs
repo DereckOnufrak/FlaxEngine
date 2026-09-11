@@ -8,6 +8,7 @@ using Real = System.Single;
 
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
+using FlaxEditor.Viewport;
 using FlaxEngine;
 using MeshModeling;
 
@@ -46,6 +47,11 @@ namespace MeshModelingEditor
         private Vector3 _axisOrigin;
         private Float3 _axisDir;
         private float _lastAxisT;
+
+        // Grid-snap accumulators: fractional movement not yet applied because it hasn't crossed a grid line, kept
+        // across frames so a slow drag still snaps correctly instead of resetting every frame.
+        private Vector3 _snapAccumulator;
+        private float _axisSnapAccumulator;
 
         /// <inheritdoc />
         public override bool IsControllingMouse => _isDragging;
@@ -128,6 +134,7 @@ namespace MeshModelingEditor
             _axisOrigin = centroid;
             _axisDir = axes[bestAxis];
             _lastAxisT = bestT;
+            _axisSnapAccumulator = 0.0f;
             _dragSnapshot = data.Clone();
             _dragDistance = 0.0f;
             _isDragging = true;
@@ -138,7 +145,18 @@ namespace MeshModelingEditor
         {
             var ray = Owner.MouseRay;
             ClosestPointRayLine(ray, _axisOrigin, _axisDir, out _, out float t);
-            float deltaT = t - _lastAxisT;
+            float rawDeltaT = t - _lastAxisT;
+            _lastAxisT = t;
+            if (Mathf.Abs(rawDeltaT) < 1e-5f)
+                return;
+
+            float deltaT = rawDeltaT;
+            if (TryGetGridSnapSize(out float snap))
+            {
+                _axisSnapAccumulator += rawDeltaT;
+                deltaT = (int)(_axisSnapAccumulator / snap) * snap;
+                _axisSnapAccumulator -= deltaT;
+            }
             if (Mathf.Abs(deltaT) < 1e-5f)
                 return;
 
@@ -148,7 +166,6 @@ namespace MeshModelingEditor
             mesh.Rebuild();
 
             _dragDistance += Mathf.Abs(deltaT);
-            _lastAxisT = t;
         }
 
         private void TryPickAndBeginDrag(EditableMesh mesh, EditableMeshData data)
@@ -189,6 +206,7 @@ namespace MeshModelingEditor
                 _lastDragPoint = centroid;
 
             _dragAxis = -1;
+            _snapAccumulator = Vector3.Zero;
             _dragSnapshot = data.Clone();
             _dragDistance = 0.0f;
             _isDragging = true;
@@ -200,7 +218,22 @@ namespace MeshModelingEditor
             var ray = Owner.MouseRay;
             if (!CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out Vector3 point))
                 return;
-            Vector3 worldDelta = point - _lastDragPoint;
+            Vector3 rawDelta = point - _lastDragPoint;
+            _lastDragPoint = point;
+            _dragPlanePoint = point;
+            if (rawDelta.LengthSquared < 1e-10f)
+                return;
+
+            Vector3 worldDelta = rawDelta;
+            if (TryGetGridSnapSize(out float snap))
+            {
+                _snapAccumulator += rawDelta;
+                worldDelta = new Vector3(
+                                         (int)(_snapAccumulator.X / snap) * snap,
+                                         (int)(_snapAccumulator.Y / snap) * snap,
+                                         (int)(_snapAccumulator.Z / snap) * snap);
+                _snapAccumulator -= worldDelta;
+            }
             if (worldDelta.LengthSquared < 1e-10f)
                 return;
 
@@ -209,8 +242,26 @@ namespace MeshModelingEditor
             mesh.Rebuild();
 
             _dragDistance += (float)worldDelta.Length;
-            _lastDragPoint = point;
-            _dragPlanePoint = point;
+        }
+
+        /// <summary>
+        /// Gets the world-unit grid cell size to snap dragging to, mirroring the same "Move Snapping" toggle/value
+        /// the normal actor-transform gizmo uses (<see cref="TransformGizmoBase.TranslationSnapEnable"/>/
+        /// <see cref="TransformGizmoBase.TranslationSnapValue"/>) - and also respecting the same held-Ctrl
+        /// transient toggle (<see cref="IGizmoOwner.UseSnapping"/>). Returns false (no snapping) if snapping isn't
+        /// enabled, or the configured value is non-positive (e.g. the transform gizmo's "snap to object bounds"
+        /// mode, which doesn't apply to mesh-element dragging).
+        /// </summary>
+        private bool TryGetGridSnapSize(out float snapSize)
+        {
+            snapSize = 0.0f;
+            if (Owner is not MainEditorGizmoViewport viewport)
+                return false;
+            var transformGizmo = viewport.TransformGizmo;
+            if (transformGizmo == null || !(transformGizmo.TranslationSnapEnable || Owner.UseSnapping))
+                return false;
+            snapSize = (float)transformGizmo.TranslationSnapValue;
+            return snapSize > 0.0f;
         }
 
         private void EndDrag(EditableMesh mesh, EditableMeshData data)
