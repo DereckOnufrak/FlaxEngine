@@ -118,13 +118,16 @@ namespace MeshModeling
                     outUv.Add(ProjectUv(facePositions[i], normal));
                 }
 
-                // Fan-triangulate the (assumed convex) polygon. Reversed relative to the loop order so the emitted
-                // triangles are clockwise (as viewed from outside), matching Mesh.UpdateMesh's winding requirement.
+                // Fan-triangulate the (assumed convex) polygon, in the loop's own order. (A prior version reversed
+                // this on the assumption Mesh.UpdateMesh needed clockwise-from-outside triangles; a live build
+                // showed that was backwards - the mesh rendered inside-out/flipped regardless of the explicit
+                // vertex normal's sign, which only makes sense if winding, not the normal attribute, was driving
+                // the visible culling/shading. Natural order fixed it.)
                 for (int i = 1; i < facePositions.Length - 1; i++)
                 {
                     outTriangles.Add(baseVertex);
-                    outTriangles.Add(baseVertex + i + 1);
                     outTriangles.Add(baseVertex + i);
+                    outTriangles.Add(baseVertex + i + 1);
                     outTriangleFaces.Add(f);
                 }
             }
@@ -227,11 +230,11 @@ namespace MeshModeling
             var v0 = facePositions[0];
             var v1 = facePositions[1];
             var v2 = facePositions[2];
-            // Cross(v2-v0, v1-v0), not the more textbook Cross(v1-v0, v2-v0): confirmed empirically against Flax's
-            // actual winding/handedness convention (a real build had faces lit as if front-facing normals pointed
-            // inward, which this flip corrects). Extrude direction and UV projection both derive from this normal,
-            // so getting its sign right here fixes those too.
-            var normal = Float3.Cross(v2 - v0, v1 - v0);
+            // Standard right-hand-rule normal for the loop's own (CCW-from-outside) winding - see the note on the
+            // fan-triangulation below for why this, not the winding, turned out not to matter for the flipped-look
+            // bug: the default material's shading/culling is apparently driven by winding, not this explicit
+            // vertex normal. Kept mathematically consistent with the loop anyway, since other materials may use it.
+            var normal = Float3.Cross(v1 - v0, v2 - v0);
             float len = normal.Length;
             return len > 1e-8f ? normal / len : Float3.UnitZ;
         }
