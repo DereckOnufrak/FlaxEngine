@@ -80,12 +80,22 @@ namespace FlaxEngine
         /// Triangulates the mesh into flat-shaded render data. Each face's vertices are duplicated so faces don't
         /// share normals/UVs across their shared edges (hard-edge/flat shading).
         /// </summary>
-        public static void Triangulate(EditableMeshData data, out Float3[] positions, out int[] triangles, out Float3[] normals, out Float2[] uv)
+        /// <param name="data">The mesh to triangulate.</param>
+        /// <param name="positions">The output (duplicated) vertex positions.</param>
+        /// <param name="triangles">The output triangle indices (clockwise, 3 per triangle).</param>
+        /// <param name="normals">The output per-vertex (flat) normals.</param>
+        /// <param name="uv">The output per-vertex UVs.</param>
+        /// <param name="triangleFaces">
+        /// For each output triangle, the <see cref="EditableMeshData.Faces"/> index it belongs to. Used to map a
+        /// raycast hit back to the mesh data it came from (see <see cref="EditableMeshData.GetFaceLoop"/>).
+        /// </param>
+        public static void Triangulate(EditableMeshData data, out Float3[] positions, out int[] triangles, out Float3[] normals, out Float2[] uv, out int[] triangleFaces)
         {
             var outPositions = new List<Float3>();
             var outTriangles = new List<int>();
             var outNormals = new List<Float3>();
             var outUv = new List<Float2>();
+            var outTriangleFaces = new List<int>();
 
             for (int f = 0; f < data.Faces.Count; f++)
             {
@@ -114,6 +124,7 @@ namespace FlaxEngine
                     outTriangles.Add(baseVertex);
                     outTriangles.Add(baseVertex + i + 1);
                     outTriangles.Add(baseVertex + i);
+                    outTriangleFaces.Add(f);
                 }
             }
 
@@ -121,17 +132,28 @@ namespace FlaxEngine
             triangles = outTriangles.ToArray();
             normals = outNormals.ToArray();
             uv = outUv.ToArray();
+            triangleFaces = outTriangleFaces.ToArray();
+        }
+
+        /// <summary>
+        /// Convenience overload of <see cref="Triangulate(EditableMeshData,out Float3[],out int[],out Float3[],out Float2[],out int[])"/>
+        /// for callers that only need render data (e.g. baking), not the picking-support mapping.
+        /// </summary>
+        public static void Triangulate(EditableMeshData data, out Float3[] positions, out int[] triangles, out Float3[] normals, out Float2[] uv)
+        {
+            Triangulate(data, out positions, out triangles, out normals, out uv, out _);
         }
 
         /// <summary>
         /// Extrudes a face outward along its normal by the given distance, replacing it with a cap face and a ring
         /// of new side faces.
         /// </summary>
-        public static void ExtrudeFace(EditableMeshData data, int faceIndex, float distance)
+        /// <returns>The index of the new cap face (the extruded replacement for <paramref name="faceIndex"/>), or -1 if the face was degenerate.</returns>
+        public static int ExtrudeFace(EditableMeshData data, int faceIndex, float distance)
         {
             var loop = data.GetFaceLoop(faceIndex);
             if (loop.Count < 3)
-                return;
+                return -1;
 
             var facePositions = new Float3[loop.Count];
             for (int i = 0; i < loop.Count; i++)
@@ -155,6 +177,7 @@ namespace FlaxEngine
             }
 
             // New cap face, in the same winding order as the original.
+            int capFaceIndex = loops.Count;
             loops.Add(new List<int>(newIndices));
             slots.Add(extrudedSlot);
 
@@ -167,6 +190,7 @@ namespace FlaxEngine
             }
 
             RebuildTopology(data, positions.ToArray(), loops, slots);
+            return capFaceIndex;
         }
 
         /// <summary>
