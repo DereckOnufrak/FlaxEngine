@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using FlaxEditor;
+using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
