@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using FlaxEngine;
 
-namespace FlaxEngine
+namespace MeshModeling
 {
     /// <summary>
     /// Stores the editable topology (vertices, half-edges, faces) of a <see cref="EditableMesh"/>. Meant to be

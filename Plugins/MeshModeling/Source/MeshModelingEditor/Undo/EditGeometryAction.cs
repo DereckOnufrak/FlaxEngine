@@ -2,9 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor;
 using FlaxEngine;
+using MeshModeling;
 
-namespace FlaxEditor.Tools.Modeling.Undo
+namespace MeshModelingEditor
 {
     /// <summary>
     /// Undo action for a single mesh-editing gesture (drag, extrude, delete face, ...) performed on an

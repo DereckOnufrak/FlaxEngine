@@ -189,11 +189,6 @@ namespace FlaxEditor.Viewport
         public Tools.Foliage.EditFoliageGizmoMode EditFoliageGizmo;
 
         /// <summary>
-        /// The mesh modeling gizmo.
-        /// </summary>
-        public Tools.Modeling.ModelingGizmoMode ModelingGizmo;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="MainEditorGizmoViewport"/> class.
         /// </summary>
         /// <param name="editor">Editor instance.</param>
@@ -283,7 +278,6 @@ namespace FlaxEditor.Viewport
                 Gizmos.AddMode(EditTerrainGizmo = new Tools.Terrain.EditTerrainGizmoMode());
                 Gizmos.AddMode(PaintFoliageGizmo = new Tools.Foliage.PaintFoliageGizmoMode());
                 Gizmos.AddMode(EditFoliageGizmo = new Tools.Foliage.EditFoliageGizmoMode());
-                Gizmos.AddMode(ModelingGizmo = new Tools.Modeling.ModelingGizmoMode());
 
                 // Activate transform mode first
                 Gizmos.SetActiveMode<TransformGizmoMode>();

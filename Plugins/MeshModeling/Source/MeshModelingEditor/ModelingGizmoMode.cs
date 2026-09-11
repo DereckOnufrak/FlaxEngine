@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.Viewport.Modes;
 using FlaxEngine;
+using MeshModeling;
 
-namespace FlaxEditor.Tools.Modeling
+namespace MeshModelingEditor
 {
     /// <summary>
     /// In-editor mesh modeling tool: lets the user select and edit an <see cref="EditableMesh"/> actor's geometry

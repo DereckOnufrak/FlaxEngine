@@ -2,13 +2,14 @@
 
 using System;
 using System.IO;
+using FlaxEditor;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.Tools.Modeling.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using MeshModeling;
 
-namespace FlaxEditor.Tools.Modeling
+namespace MeshModelingEditor
 {
     /// <summary>
     /// Toolbox tab for the in-editor mesh modeling tool: create primitives, choose what kind of element to select

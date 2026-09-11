@@ -4,8 +4,9 @@ using System;
 #if FLAX_EDITOR
 using System.Threading.Tasks;
 #endif
+using FlaxEngine;
 
-namespace FlaxEngine
+namespace MeshModeling
 {
     /// <summary>
     /// An actor that renders geometry authored with the in-editor mesh modeling tools (see
@@ -72,7 +73,7 @@ namespace FlaxEngine
             // (same reasoning as MeshDataCache's mesh data downloads).
             bool failed = true;
             Task.Run(() => failed = model.Save(true, path)).Wait();
-            Object.Destroy(model);
+            FlaxEngine.Object.Destroy(model);
 
             if (failed)
             {

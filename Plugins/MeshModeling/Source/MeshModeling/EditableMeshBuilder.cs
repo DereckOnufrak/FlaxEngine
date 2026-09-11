@@ -2,8 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEngine;
 
-namespace FlaxEngine
+namespace MeshModeling
 {
     /// <summary>
     /// Geometry algorithms for creating and editing <see cref="EditableMeshData"/>: primitive generation,

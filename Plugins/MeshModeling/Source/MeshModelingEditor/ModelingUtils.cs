@@ -1,8 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using FlaxEditor;
 using FlaxEngine;
+using MeshModeling;
 
-namespace FlaxEditor.Tools.Modeling
+namespace MeshModelingEditor
 {
     /// <summary>
     /// Shared helpers for committing an edit made to an <see cref="EditableMesh"/> through the modeling tool.

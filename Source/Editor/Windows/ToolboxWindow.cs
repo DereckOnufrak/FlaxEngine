@@ -564,11 +564,6 @@ namespace FlaxEditor.Windows
         public CarveTab Carve;
 
         /// <summary>
-        /// The mesh modeling tab.
-        /// </summary>
-        public Tools.Modeling.ModelingTab Modeling;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ToolboxWindow"/> class.
         /// </summary>
         /// <param name="editor">The editor.</param>
@@ -597,8 +592,6 @@ namespace FlaxEditor.Windows
             TabsControl.AddTab(VertexPaint = new VertexPaintingTab(Editor.Icons.Paint96, Editor));
             TabsControl.AddTab(Foliage = new FoliageTab(Editor.Icons.Foliage96, Editor));
             TabsControl.AddTab(Carve = new CarveTab(Editor.Icons.Terrain96, Editor));
-            // TODO: use a dedicated icon once one is added to the editor icons atlas
-            TabsControl.AddTab(Modeling = new Tools.Modeling.ModelingTab(Editor.Icons.Terrain96, Editor, Editor.Windows.EditWin.Viewport.ModelingGizmo));
 
             TabsControl.SelectedTabIndex = 0;
         }

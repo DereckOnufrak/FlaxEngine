@@ -1,0 +1,13 @@
+{
+  "Name": "MeshModeling",
+  "Version": "1.0.0.0",
+  "Company": "",
+  "Copyright": "",
+  "GameTarget": "MeshModelingTarget",
+  "EditorTarget": "MeshModelingEditorTarget",
+  "References": [
+    {
+      "Name": "$(EnginePath)/Flax.flaxproj"
+    }
+  ]
+}

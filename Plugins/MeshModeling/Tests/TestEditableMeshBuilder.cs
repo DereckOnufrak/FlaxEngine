@@ -1,9 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if FLAX_TESTS
+using FlaxEngine;
+using MeshModeling;
 using NUnit.Framework;
 
-namespace FlaxEngine.Tests
+namespace MeshModeling.Tests
 {
     /// <summary>
     /// Tests for <see cref="EditableMeshBuilder"/> and <see cref="EditableMeshData"/>.
@@ -117,4 +118,3 @@ namespace FlaxEngine.Tests
         }
     }
 }
-#endif

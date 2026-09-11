@@ -8,10 +8,10 @@ using Real = System.Single;
 
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
-using FlaxEditor.Tools.Modeling.Undo;
 using FlaxEngine;
+using MeshModeling;
 
-namespace FlaxEditor.Tools.Modeling
+namespace MeshModelingEditor
 {
     /// <summary>
     /// Gizmo for the in-editor mesh modeling tool. Picks vertices/edges/faces of the targeted

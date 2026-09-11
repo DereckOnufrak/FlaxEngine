@@ -1,8 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Content;
 using FlaxEngine;
+using MeshModeling;
 
-namespace FlaxEditor.Content
+namespace MeshModelingEditor
 {
     /// <summary>
     /// Content proxy for <see cref="EditableMeshData"/> assets (the topology data behind an <see cref="EditableMesh"/> actor).
