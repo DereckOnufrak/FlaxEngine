@@ -47,7 +47,8 @@ namespace MeshModeling
         /// Re-triangulates <see cref="Mesh"/> and persists the result as a real <see cref="Model"/> asset on disk,
         /// then points the renderer at that saved asset. Unlike <see cref="RebuildPreview"/>, this gives a stable
         /// reference that survives saving/reloading the scene. Intended to be called once per edit gesture (e.g. on
-        /// mouse-up), not every frame of a drag.
+        /// mouse-up), not every frame of a drag. Runs asynchronously - the renderer keeps showing the live preview
+        /// (see <see cref="RebuildPreview"/>) until the bake finishes a moment later.
         /// </summary>
         /// <param name="path">
         /// The output asset path. If null, defaults to next to the source <see cref="Mesh"/> asset.
@@ -69,18 +70,26 @@ namespace MeshModeling
             model.SetupLODs(new[] { 1 });
             model.LODs[0].Meshes[0].UpdateMesh(positions, triangles, normals, null, uv);
 
-            // Saving a virtual model reads its mesh data back from the GPU, so it must run off the main thread
-            // (same reasoning as MeshDataCache's mesh data downloads).
-            bool failed = true;
-            Task.Run(() => failed = model.Save(true, path)).Wait();
-            FlaxEngine.Object.Destroy(model);
-
-            if (failed)
+            // Saving a virtual model reads its mesh data back from the GPU, which requires the main thread to keep
+            // pumping frames forward - so this has to run on a background thread *without* the main thread blocking
+            // on it. Blocking here (e.g. Task.Run(...).Wait()) deadlocks the whole editor: the save can't progress
+            // until a frame runs, and no frame runs while the main thread sits waiting for the save.
+            Task.Run(() =>
             {
-                Debug.LogError($"Failed to bake EditableMesh to '{path}'.");
-                return;
-            }
-            Renderer.Model = Content.Load<Model>(path);
+                bool failed = model.Save(true, path);
+                Scripting.InvokeOnUpdate(() =>
+                {
+                    FlaxEngine.Object.Destroy(model);
+                    if (failed)
+                    {
+                        Debug.LogError($"Failed to bake EditableMesh to '{path}'.");
+                        return;
+                    }
+                    if (!this)
+                        return; // Actor was deleted while the bake was in flight.
+                    Renderer.Model = Content.Load<Model>(path);
+                });
+            });
         }
 #endif
     }
