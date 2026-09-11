@@ -136,7 +136,7 @@ namespace MeshModelingEditor
 
             Float3 localDelta = mesh.Transform.WorldToLocalVector(worldDelta);
             EditableMeshBuilder.MoveVertices(data, Mode.SelectedVertexIndices, localDelta);
-            mesh.RebuildPreview();
+            mesh.Rebuild();
 
             _dragDistance += (float)worldDelta.Length;
             _lastDragPoint = point;

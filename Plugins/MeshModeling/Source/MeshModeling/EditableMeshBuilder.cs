@@ -227,7 +227,11 @@ namespace MeshModeling
             var v0 = facePositions[0];
             var v1 = facePositions[1];
             var v2 = facePositions[2];
-            var normal = Float3.Cross(v1 - v0, v2 - v0);
+            // Cross(v2-v0, v1-v0), not the more textbook Cross(v1-v0, v2-v0): confirmed empirically against Flax's
+            // actual winding/handedness convention (a real build had faces lit as if front-facing normals pointed
+            // inward, which this flip corrects). Extrude direction and UV projection both derive from this normal,
+            // so getting its sign right here fixes those too.
+            var normal = Float3.Cross(v2 - v0, v1 - v0);
             float len = normal.Length;
             return len > 1e-8f ? normal / len : Float3.UnitZ;
         }

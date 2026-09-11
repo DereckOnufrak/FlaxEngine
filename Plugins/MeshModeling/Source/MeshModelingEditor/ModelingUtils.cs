@@ -12,16 +12,14 @@ namespace MeshModelingEditor
     static class ModelingUtils
     {
         /// <summary>
-        /// Refreshes the live preview, bakes the render <see cref="Model"/>, persists the source
-        /// <see cref="EditableMeshData"/> asset, and marks the owning scene as edited. Call this once after any
-        /// change to <see cref="EditableMesh.Mesh"/>'s instance data.
+        /// Rebuilds the render mesh, persists the source <see cref="EditableMeshData"/> asset, and marks the owning
+        /// scene as edited. Call this once after any change to <see cref="EditableMesh.Mesh"/>'s instance data.
         /// </summary>
         public static void CommitEdit(EditableMesh mesh)
         {
             if (mesh == null)
                 return;
-            mesh.RebuildPreview();
-            mesh.Bake();
+            mesh.Rebuild();
             var asset = mesh.Mesh.Asset;
             if (asset != null)
                 Editor.SaveJsonAsset(asset.Path, mesh.Mesh.Instance);
