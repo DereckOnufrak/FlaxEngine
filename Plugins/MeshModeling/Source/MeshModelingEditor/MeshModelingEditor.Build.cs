@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using Flax.Build;
+using Flax.Build.NativeCpp;
 
 /// <summary>
 /// The Mesh Modeling plugin editor module: the Modeling viewport tool, toolbox tab, undo actions and content-browser
