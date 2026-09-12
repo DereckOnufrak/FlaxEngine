@@ -38,21 +38,39 @@ namespace MeshModelingEditor
         /// <inheritdoc />
         public override void DeinitializeEditor()
         {
-            if (_tab != null)
+            // Best-effort: DeinitializeEditor can run after the editor has already torn down the windows/viewport
+            // it belongs to (e.g. on application exit, as opposed to a plugin being disabled while the editor keeps
+            // running), in which case these registries are already cleared and RemoveMode/RemoveProxy throw
+            // "Not added." Nothing further needs unregistering once the editor itself is going away, so swallow
+            // that case here rather than letting it surface as a "Failed to shutdown editor!" error dialog.
+            try
             {
-                _tab.Dispose();
-                _tab = null;
+                _tab?.Dispose();
             }
-            if (_proxy != null)
+            catch (Exception)
             {
-                Editor.ContentDatabase.RemoveProxy(_proxy);
-                _proxy = null;
             }
-            if (_gizmoMode != null)
+            _tab = null;
+
+            try
             {
-                Editor.Windows.EditWin.Viewport.Gizmos.RemoveMode(_gizmoMode);
-                _gizmoMode = null;
+                if (_proxy != null)
+                    Editor.ContentDatabase.RemoveProxy(_proxy);
             }
+            catch (Exception)
+            {
+            }
+            _proxy = null;
+
+            try
+            {
+                if (_gizmoMode != null)
+                    Editor.Windows.EditWin.Viewport.Gizmos.RemoveMode(_gizmoMode);
+            }
+            catch (Exception)
+            {
+            }
+            _gizmoMode = null;
 
             base.DeinitializeEditor();
         }
