@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using FlaxEditor;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
@@ -28,6 +29,11 @@ namespace MeshModelingEditor
         private readonly ComboBox _selectionTypeComboBox;
         private readonly Button _extrudeButton;
         private readonly Button _deleteFaceButton;
+        private readonly Button _centerOriginButton;
+        private readonly FloatValueBox _originXBox;
+        private readonly FloatValueBox _originYBox;
+        private readonly FloatValueBox _originZBox;
+        private readonly Button _moveOriginButton;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelingTab"/> class.
@@ -95,7 +101,34 @@ namespace MeshModelingEditor
             };
             _deleteFaceButton.Clicked += OnDeleteFaceClicked;
 
-            _infoLabel = new Label(createCubeButton.X, _deleteFaceButton.Bottom + 8, 260, 40)
+            _centerOriginButton = new Button(createCubeButton.X, _deleteFaceButton.Bottom + 8)
+            {
+                Text = "Center Origin",
+                TooltipText = "Moves the mesh's local origin to the center of its bounding box, without moving it in the world.",
+                Parent = panel,
+            };
+            _centerOriginButton.Clicked += OnCenterOriginClicked;
+
+            var originLabel = new Label(createCubeButton.X, _centerOriginButton.Bottom + 8, 60, 18)
+            {
+                HorizontalAlignment = TextAlignment.Near,
+                Text = "Origin:",
+                Parent = panel,
+            };
+            const float originBoxWidth = 55;
+            _originXBox = new FloatValueBox(0.0f, originLabel.Right + 4, originLabel.Y, originBoxWidth) { Parent = panel };
+            _originYBox = new FloatValueBox(0.0f, _originXBox.Right + 4, originLabel.Y, originBoxWidth) { Parent = panel };
+            _originZBox = new FloatValueBox(0.0f, _originYBox.Right + 4, originLabel.Y, originBoxWidth) { Parent = panel };
+
+            _moveOriginButton = new Button(createCubeButton.X, originLabel.Bottom + 4)
+            {
+                Text = "Move Origin",
+                TooltipText = "Moves the mesh's local origin by the X/Y/Z offset above, without moving it in the world.",
+                Parent = panel,
+            };
+            _moveOriginButton.Clicked += OnMoveOriginClicked;
+
+            _infoLabel = new Label(createCubeButton.X, _moveOriginButton.Bottom + 8, 260, 40)
             {
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
@@ -181,12 +214,55 @@ namespace MeshModelingEditor
             Editor.Instance.Undo.AddAction(new EditGeometryAction(mesh, before, data.Clone()));
         }
 
+        private void OnCenterOriginClicked()
+        {
+            var mesh = _gizmo.SelectedMesh;
+            var data = mesh ? mesh.Mesh.Instance : null;
+            if (data == null)
+                return;
+            ApplySetOrigin(mesh, data, EditableMeshBuilder.ComputeBoundsCenter(data));
+        }
+
+        private void OnMoveOriginClicked()
+        {
+            var mesh = _gizmo.SelectedMesh;
+            var data = mesh ? mesh.Mesh.Instance : null;
+            if (data == null)
+                return;
+            var offset = new Vector3(_originXBox.Value, _originYBox.Value, _originZBox.Value);
+            if (ApplySetOrigin(mesh, data, offset))
+                _originXBox.Value = _originYBox.Value = _originZBox.Value = 0.0f;
+        }
+
+        /// <summary>
+        /// Moves <paramref name="mesh"/>'s origin to the given local-space point (relative to its current origin)
+        /// via <see cref="EditableMesh.SetOrigin"/>, persists the result, and records an undo step covering both
+        /// the geometry and the actor position change. Returns false (does nothing) for a ~zero offset.
+        /// </summary>
+        private bool ApplySetOrigin(EditableMesh mesh, EditableMeshData data, Vector3 localOffset)
+        {
+            if (localOffset.LengthSquared < 1e-12f)
+                return false;
+
+            var before = data.Clone();
+            var positionBefore = mesh.Position;
+            mesh.SetOrigin(localOffset);
+            ModelingUtils.CommitEdit(mesh);
+            Editor.Instance.Undo.AddAction(new SetOriginAction(mesh, before, data.Clone(), positionBefore, mesh.Position));
+            return true;
+        }
+
         private void UpdateUI()
         {
             var mesh = _gizmo.SelectedMesh;
             bool hasFaceSelected = mesh && _gizmo.SelectionType == ModelingGizmoMode.ElementType.Face && _gizmo.SelectedFaceIndex >= 0;
             _extrudeButton.Enabled = hasFaceSelected;
             _deleteFaceButton.Enabled = hasFaceSelected;
+            _centerOriginButton.Enabled = mesh;
+            _originXBox.Enabled = mesh;
+            _originYBox.Enabled = mesh;
+            _originZBox.Enabled = mesh;
+            _moveOriginButton.Enabled = mesh;
 
             if (!mesh)
                 _infoLabel.Text = "Select an Editable Mesh actor to edit it,\nor create a new one above.";

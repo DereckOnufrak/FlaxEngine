@@ -222,6 +222,37 @@ namespace MeshModeling
         }
 
         /// <summary>
+        /// Moves every vertex in the mesh by a delta, without changing topology. Used to re-center the mesh's local
+        /// origin (see <see cref="ComputeBoundsCenter"/>) - shifting every vertex by -offset is the geometry half
+        /// of that operation; the caller is responsible for compensating the owning actor's position so the mesh
+        /// doesn't appear to move in the world.
+        /// </summary>
+        public static void OffsetAllVertices(EditableMeshData data, Vector3 delta)
+        {
+            var d = (Float3)delta;
+            for (int i = 0; i < data.Positions.Count; i++)
+                data.Positions[i] += d;
+        }
+
+        /// <summary>
+        /// Computes the center of the mesh's local-space bounding box (the midpoint between its min and max
+        /// extents on each axis) - the usual choice for "center the origin on the geometry".
+        /// </summary>
+        public static Float3 ComputeBoundsCenter(EditableMeshData data)
+        {
+            if (data.Positions.Count == 0)
+                return Float3.Zero;
+            var min = data.Positions[0];
+            var max = min;
+            for (int i = 1; i < data.Positions.Count; i++)
+            {
+                min = Float3.Min(min, data.Positions[i]);
+                max = Float3.Max(max, data.Positions[i]);
+            }
+            return (min + max) * 0.5f;
+        }
+
+        /// <summary>
         /// Computes a flat face normal from its (assumed planar, convex) vertex loop. Face loops are stored
         /// counter-clockwise as viewed from outside the solid, so this is the standard right-hand-rule normal.
         /// </summary>

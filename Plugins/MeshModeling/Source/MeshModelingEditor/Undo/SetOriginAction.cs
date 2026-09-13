@@ -8,13 +8,12 @@ using MeshModeling;
 namespace MeshModelingEditor
 {
     /// <summary>
-    /// Undo action for a single mesh-editing gesture (drag, extrude, delete face, ...) performed on an
-    /// <see cref="EditableMesh"/>. Stores full before/after snapshots of the edited <see cref="EditableMeshData"/> -
-    /// meshes edited with this tool are small enough that a full snapshot is simpler and safer than diffing.
+    /// Undo action for <see cref="EditableMesh.SetOrigin"/>: unlike a plain geometry edit, moving the origin also
+    /// changes the actor's own position (to keep the mesh visually in place), so both need a before/after snapshot.
     /// </summary>
     /// <seealso cref="FlaxEditor.IUndoAction" />
     [Serializable]
-    sealed class EditGeometryAction : IUndoAction
+    sealed class SetOriginAction : IUndoAction
     {
         [Serialize]
         private readonly Guid _meshActorId;
@@ -25,35 +24,40 @@ namespace MeshModelingEditor
         [Serialize]
         private EditableMeshData _after;
 
+        [Serialize]
+        private Vector3 _positionBefore;
+
+        [Serialize]
+        private Vector3 _positionAfter;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="EditGeometryAction"/> class.
+        /// Initializes a new instance of the <see cref="SetOriginAction"/> class.
         /// </summary>
-        /// <param name="mesh">The edited actor.</param>
-        /// <param name="before">A snapshot of the mesh data before the edit.</param>
-        /// <param name="after">A snapshot of the mesh data after the edit.</param>
-        public EditGeometryAction(EditableMesh mesh, EditableMeshData before, EditableMeshData after)
+        public SetOriginAction(EditableMesh mesh, EditableMeshData before, EditableMeshData after, Vector3 positionBefore, Vector3 positionAfter)
         {
             _meshActorId = mesh.ID;
             _before = before;
             _after = after;
+            _positionBefore = positionBefore;
+            _positionAfter = positionAfter;
         }
 
         /// <inheritdoc />
-        public string ActionString => "Edit mesh geometry";
+        public string ActionString => "Set mesh origin";
 
         /// <inheritdoc />
         public void Do()
         {
-            Apply(_after);
+            Apply(_after, _positionAfter);
         }
 
         /// <inheritdoc />
         public void Undo()
         {
-            Apply(_before);
+            Apply(_before, _positionBefore);
         }
 
-        private void Apply(EditableMeshData snapshot)
+        private void Apply(EditableMeshData snapshot, Vector3 position)
         {
             var meshActorId = _meshActorId;
             var mesh = FlaxEngine.Object.Find<EditableMesh>(ref meshActorId);
@@ -64,6 +68,7 @@ namespace MeshModelingEditor
                 return;
 
             ModelingUtils.CopyInto(snapshot, target);
+            mesh.Position = position;
             ModelingUtils.CommitEdit(mesh);
         }
 

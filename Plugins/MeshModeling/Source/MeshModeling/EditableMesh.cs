@@ -51,5 +51,24 @@ namespace MeshModeling
             if (old != null && old.IsVirtual)
                 Object.Destroy(old);
         }
+
+        /// <summary>
+        /// Moves the mesh's local origin to the given local-space point, without moving the mesh visually in world
+        /// space - compensates by shifting the actor's own position to match. E.g. pass
+        /// <see cref="EditableMeshBuilder.ComputeBoundsCenter"/>'s result to center the origin on the mesh's
+        /// bounding box, or an arbitrary point to place the origin anywhere relative to the geometry.
+        /// </summary>
+        /// <param name="localPoint">The local-space point (relative to the current origin) to move the origin to.</param>
+        public void SetOrigin(Vector3 localPoint)
+        {
+            var data = Mesh.Instance;
+            if (data == null || localPoint.LengthSquared < 1e-12f)
+                return;
+
+            var newPosition = Transform.LocalToWorld(localPoint);
+            EditableMeshBuilder.OffsetAllVertices(data, -localPoint);
+            Position = newPosition;
+            Rebuild();
+        }
     }
 }
