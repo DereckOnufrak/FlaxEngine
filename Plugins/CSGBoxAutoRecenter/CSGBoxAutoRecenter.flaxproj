@@ -1,0 +1,14 @@
+{
+  "Name": "CSG Box Auto Recenter",
+  "Version": "1.0",
+  "MinEngineVersion": "1.10",
+  "Company": "",
+  "Copyright": "",
+  "GameTarget": "CSGBoxAutoRecenterTarget",
+  "EditorTarget": "CSGBoxAutoRecenterEditorTarget",
+  "References": [
+    {
+      "Name": "$(EnginePath)/Flax.flaxproj"
+    }
+  ]
+}
