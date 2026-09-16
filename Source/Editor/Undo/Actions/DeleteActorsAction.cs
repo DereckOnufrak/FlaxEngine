@@ -255,7 +255,7 @@ namespace FlaxEditor.Actions
         {
             for (int i = 0; i < _nodeParents.Count; i++)
             {
-                if (_nodeParents[i] is ActorNode node && node.Actor is BoxBrush)
+                if (_nodeParents[i] is ActorNode node && (node.Actor is BoxBrush || node.Actor is WedgeBrush))
                 {
                     _affectsCSG = true;
                     break;
@@ -290,7 +290,7 @@ namespace FlaxEditor.Actions
             {
                 for (var i = 0; i < _nodeParents.Count; i++)
                 {
-                    if (_nodeParents[i] is ActorNode node && node.Actor is BoxBrush)
+                    if (_nodeParents[i] is ActorNode node && (node.Actor is BoxBrush || node.Actor is WedgeBrush))
                         node.Actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
                 }
             }

@@ -237,7 +237,7 @@ namespace FlaxEditor.Modules
             // Auto CSG mesh rebuild
             if (!isPlayMode && options.General.AutoRebuildCSG)
             {
-                if (actor is BoxBrush && actor.Scene)
+                if ((actor is BoxBrush || actor is WedgeBrush) && actor.Scene)
                     actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
             }
 

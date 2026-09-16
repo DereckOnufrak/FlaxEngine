@@ -30,6 +30,7 @@ class PointLight;
 class Skybox;
 class EnvironmentProbe;
 class BoxBrush;
+class WedgeBrush;
 class Scene;
 class Sky;
 class RigidBody;

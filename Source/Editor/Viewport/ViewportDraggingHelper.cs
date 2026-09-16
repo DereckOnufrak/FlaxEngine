@@ -44,6 +44,7 @@ namespace FlaxEditor.Viewport
         private StaticModel _previewStaticModel;
         private int _previewModelEntryIndex;
         private BrushSurface _previewBrushSurface;
+        private WedgeSurface _previewWedgeSurface;
 
         internal ViewportDragHandlers(IGizmoOwner owner, EditorViewport viewport, Func<AssetItem, bool> validateAsset, Func<ScriptType, bool> validateDragActorType, Func<ScriptItem, bool> validateDragScriptItem)
         {
@@ -59,6 +60,7 @@ namespace FlaxEditor.Viewport
             _previewStaticModel = null;
             _previewModelEntryIndex = -1;
             _previewBrushSurface = new BrushSurface();
+            _previewWedgeSurface = new WedgeSurface();
         }
 
         internal void CollectDrawCalls(ViewportDebugDrawData debugDrawData, ref RenderContext renderContext)
@@ -67,6 +69,8 @@ namespace FlaxEditor.Viewport
                 debugDrawData.HighlightModel(_previewStaticModel, _previewModelEntryIndex);
             if (_previewBrushSurface.Brush)
                 debugDrawData.HighlightBrushSurface(_previewBrushSurface);
+            if (_previewWedgeSurface.Brush)
+                debugDrawData.HighlightBrushSurface(_previewWedgeSurface);
         }
 
         internal DragDropEffect DragEnter(ref Float2 location, DragData data)
@@ -136,6 +140,10 @@ namespace FlaxEditor.Viewport
                 else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
                 {
                     _previewBrushSurface = brushSurfaceNode.Surface;
+                }
+                else if (hit is WedgeBrushNode.SideLinkNode wedgeSurfaceNode)
+                {
+                    _previewWedgeSurface = wedgeSurfaceNode.Surface;
                 }
                 else
                 {
@@ -268,6 +276,15 @@ namespace FlaxEditor.Viewport
                         var surface = brushSurfaceNode.Surface;
                         surface.Material = material;
                         brushSurfaceNode.Surface = surface;
+                    }
+                }
+                else if (hit is WedgeBrushNode.SideLinkNode wedgeSurfaceNode)
+                {
+                    using (new UndoBlock(_owner.Undo, wedgeSurfaceNode.Brush, "Change material"))
+                    {
+                        var surface = wedgeSurfaceNode.Surface;
+                        surface.Material = material;
+                        wedgeSurfaceNode.Surface = surface;
                     }
                 }
                 return;

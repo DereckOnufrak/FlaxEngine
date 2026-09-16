@@ -91,6 +91,22 @@ namespace FlaxEditor
         }
 
         /// <summary>
+        /// Highlights the wedge brush surface.
+        /// </summary>
+        /// <param name="surface">The surface.</param>
+        public void HighlightBrushSurface(WedgeSurface surface)
+        {
+            if (surface.Brush == null)
+                return;
+            surface.Brush.GetVertices(surface.Index, out var vertices);
+            if (vertices.Length > 0)
+            {
+                for (int i = 0; i < vertices.Length; i++)
+                    _highlightTriangles.Add(vertices[i]);
+            }
+        }
+
+        /// <summary>
         /// Draws the collected actors via <see cref="DebugDraw"/>.
         /// </summary>
         /// <param name="drawScenes">True if draw all loaded scenes too, otherwise will draw only provided actors.</param>

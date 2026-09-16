@@ -46,6 +46,7 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(StaticModel), typeof(StaticModelNode));
             CustomNodesTypes.Add(typeof(AnimatedModel), typeof(AnimatedModelNode));
             CustomNodesTypes.Add(typeof(BoxBrush), typeof(BoxBrushNode));
+            CustomNodesTypes.Add(typeof(WedgeBrush), typeof(WedgeBrushNode));
             CustomNodesTypes.Add(typeof(TextRender), typeof(TextRenderNode));
             CustomNodesTypes.Add(typeof(AudioListener), typeof(AudioListenerNode));
             CustomNodesTypes.Add(typeof(AudioSource), typeof(AudioSourceNode));
