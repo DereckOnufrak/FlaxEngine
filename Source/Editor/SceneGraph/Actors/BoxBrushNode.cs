@@ -166,11 +166,20 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = Brush;
                     Transform localTrans = actor.Transform.WorldToLocal(value);
                     var prevLocalOffset = _offset * actor.Size + actor.Center;
-                    var localOffset = Vector3.Abs(_offset) * 2.0f * localTrans.Translation;
-                    var localOffsetDelta = localOffset - prevLocalOffset;
-                    float centerScale = Index % 2 == 0 ? 0.5f : -0.5f;
-                    actor.Size += localOffsetDelta;
-                    actor.Center += localOffsetDelta * centerScale;
+
+                    // Mask to the face's own axis so an unrelated drift on the other axes
+                    // (eg. a non-zero Center) never leaks into their Size/Center.
+                    var axisMask = Vector3.Abs(_offset) * 2.0f;
+                    var delta = axisMask * (localTrans.Translation - prevLocalOffset);
+
+                    // On the min faces (-X/-Y/-Z, odd Index) the face sits on the negative
+                    // side of Center, so growing the box means dragging the handle further
+                    // negative - the opposite sign from the max faces. faceSign flips the
+                    // Size delta to match so dragging outward always extends the box, while
+                    // Center always moves by half the delta to keep the opposite face fixed.
+                    var faceSign = _offset * 2.0f;
+                    actor.Size += delta * faceSign;
+                    actor.Center += delta * 0.5f;
                 }
             }
 
