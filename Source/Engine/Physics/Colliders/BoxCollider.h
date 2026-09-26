@@ -58,6 +58,13 @@ public:
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:
+#if USE_EDITOR
+    /// <summary>
+    /// Draws the collider box shape (with thick wires) using the given color.
+    /// </summary>
+    void DrawDebugBoxSelf(const Color& color);
+#endif
+
     // [Collider]
     ImplementPhysicsDebug;
     void UpdateBounds() override;
