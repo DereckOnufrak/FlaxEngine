@@ -113,11 +113,7 @@ namespace
 
 void BoxCollider::OnDebugDrawSelf()
 {
-    DrawDebugBoxSelf(Color::GreenYellow);
-}
-
-void BoxCollider::DrawDebugBoxSelf(const Color& color)
-{
+    const Color color = Color::GreenYellow;
     DEBUG_DRAW_WIRE_BOX(_bounds, color * 0.3f, 0, false);
 
     Vector3 corners[8];
