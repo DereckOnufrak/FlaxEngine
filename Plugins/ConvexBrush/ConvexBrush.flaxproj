@@ -1,0 +1,17 @@
+{
+  "Name": "ConvexBrush",
+  "Version": {
+    "Major": 1,
+    "Minor": 0,
+    "Build": 0
+  },
+  "Company": "",
+  "Copyright": "",
+  "GameTarget": "ConvexBrushTarget",
+  "EditorTarget": "ConvexBrushEditorTarget",
+  "References": [
+    {
+      "Name": "$(EnginePath)/Flax.flaxproj"
+    }
+  ]
+}

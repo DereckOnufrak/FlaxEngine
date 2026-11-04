@@ -1,0 +1,6 @@
+Binaries/
+Cache/
+Logs/
+Output/
+*.csproj
+*.sln
