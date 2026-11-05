@@ -247,6 +247,7 @@ namespace ConvexBrush
         {
             base.OnContextMenu(contextMenu, window);
 
+            contextMenu.AddButton("Bake collision", () => ConvexBrushBaker.Bake(Brush, Root?.Undo));
             contextMenu.AddButton("Reset brush to box", () => EditBrush("Reset brush to box", b => b.ResetToBox(ConvexBrushCollider.DefaultSize)));
         }
 

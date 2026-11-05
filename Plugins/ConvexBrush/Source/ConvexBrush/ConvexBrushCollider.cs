@@ -12,10 +12,10 @@ namespace ConvexBrush
 {
     /// <summary>
     /// Convex collider defined by a set of faces (planes), editable in the viewport per-face like a CSG brush.
-    /// The collision shape is cooked at runtime into a virtual <see cref="FlaxEngine.CollisionData"/> asset (convex mesh).
+    /// The collision is baked in the editor into a <see cref="FlaxEngine.CollisionData"/> asset (convex mesh) used by the game.
     /// </summary>
     /// <remarks>
-    /// In a cooked game, enable <c>Physics Settings → Support Cooking At Runtime</c> so the collision can be generated.
+    /// While editing, the editor shows a live preview collision (in-memory). Use Bake Collision so the game uses the baked asset (no runtime cooking needed).
     /// </remarks>
     [ActorContextMenu("New/Physics/Colliders/Convex Brush Collider"), ActorToolbox("Physics", "Convex Brush Collider")]
     public class ConvexBrushCollider : MeshCollider
@@ -28,12 +28,22 @@ namespace ConvexBrush
         [Serialize]
         private BrushFace[] _faces = CreateBoxFaces(DefaultSize);
 
+        [Serialize]
+        private CollisionData _bakedCollision;
+
+        [Serialize]
+        private int _bakedHash;
+
         private ConvexBrushGeometry _geometry;
         private int _geometryHash;
+        private bool _invalidLogged;
+#if FLAX_EDITOR
         private CollisionData _virtualData;
         private int _cookedHash;
         private bool _cookFailed;
-        private bool _invalidLogged;
+#else
+        private bool _bakeWarningLogged;
+#endif
 
         /// <summary>
         /// Occurs when brush faces get modified (geometry rebuilt).
@@ -53,6 +63,24 @@ namespace ConvexBrush
                 OnFacesChanged();
             }
         }
+
+        /// <summary>
+        /// The baked collision asset used by the game. Created with Bake Collision in the editor.
+        /// </summary>
+        [NoSerialize, ShowInEditor, EditorOrder(210), EditorDisplay("Brush"), Tooltip("The baked collision asset used by the game. Created with Bake Collision in the editor (Brush Tools).")]
+        public CollisionData BakedCollision => _bakedCollision;
+
+        /// <summary>
+        /// Gets a value indicating whether the baked collision exists and matches the current faces.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public bool IsBakedUpToDate => _bakedCollision && _bakedHash == FacesHash;
+
+        /// <summary>
+        /// Gets the deterministic hash of the faces data (stable across sessions, used to detect out-of-date baked collision).
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public int FacesHash => ComputeHash(_faces);
 
         /// <summary>
         /// Gets the amount of faces.
@@ -267,12 +295,40 @@ namespace ConvexBrush
         }
 
         /// <summary>
-        /// Rebuilds the brush geometry and cooks the collision (skipped if nothing changed).
+        /// Sets the baked collision asset (called by the editor after baking).
         /// </summary>
-        /// <param name="force">True if force cooking even if faces didn't change.</param>
+        /// <param name="bakedCollision">The baked asset.</param>
+        /// <param name="facesHash">The <see cref="FacesHash"/> of the faces used for baking.</param>
+        public void SetBakedCollision(CollisionData bakedCollision, int facesHash)
+        {
+            _bakedCollision = bakedCollision;
+            _bakedHash = facesHash;
+            if (IsDuringPlay)
+            {
+                // Force collider refresh (asset could be reloaded in-place)
+                CollisionData = null;
+                Rebuild(true);
+            }
+        }
+
+        /// <summary>
+        /// Updates the collision used by the collider. Game uses the baked asset. Editor uses the baked asset if it's up-to-date, otherwise a live preview cooked in-memory.
+        /// </summary>
+        /// <param name="force">True if force update even if faces didn't change.</param>
         public void Rebuild(bool force = false)
         {
-            var hash = ComputeHash(_faces);
+#if FLAX_EDITOR
+            var hash = FacesHash;
+            if (IsBakedUpToDate)
+            {
+                if (force || CollisionData != _bakedCollision)
+                {
+                    CollisionData = null;
+                    CollisionData = _bakedCollision;
+                }
+                _cookedHash = hash;
+                return;
+            }
             if (!force && hash == _cookedHash && _virtualData && CollisionData == _virtualData)
                 return;
 
@@ -286,44 +342,60 @@ namespace ConvexBrush
             }
             _invalidLogged = false;
 
+            // Live preview (editor only, never saved)
             if (!_virtualData)
                 _virtualData = Content.CreateVirtualAsset<CollisionData>();
-
-            // Detach before cooking so the collider never uses data that is being replaced
             CollisionData = null;
             if (_virtualData.CookCollision(CollisionDataType.ConvexMesh, geometry.Vertices, geometry.Triangles))
             {
                 if (!_cookFailed)
-                    Debug.LogError($"Convex Brush Collider '{Name}' failed to cook collision. In a cooked game enable Physics Settings option 'Support Cooking At Runtime'.", this);
+                    Debug.LogError($"Convex Brush Collider '{Name}' failed to cook preview collision.", this);
                 _cookFailed = true;
                 return;
             }
             _cookFailed = false;
             _cookedHash = hash;
             CollisionData = _virtualData;
+#else
+            if (CollisionData != _bakedCollision || force)
+                CollisionData = _bakedCollision;
+            if (!_bakeWarningLogged)
+            {
+                if (!_bakedCollision)
+                    Debug.LogWarning($"Convex Brush Collider '{Name}' has no baked collision. Use Bake Collision in the editor.", this);
+                else if (_bakedHash != FacesHash)
+                    Debug.LogWarning($"Convex Brush Collider '{Name}' baked collision is out of date (faces changed). Use Bake Collision in the editor.", this);
+                _bakeWarningLogged = true;
+            }
+#endif
         }
 
         /// <summary>
-        /// Detaches the runtime-generated collision data from the collider so it won't be serialized (virtual assets don't exist on disk). Used by the editor before saving the scene.
+        /// Detaches the in-memory preview collision from the collider so it won't be serialized (it doesn't exist on disk). Used by the editor before saving the scene.
         /// </summary>
         /// <returns>True if collision data was detached and needs to be restored with <see cref="RestoreRuntimeCollision"/>.</returns>
         public bool DetachRuntimeCollision()
         {
+#if FLAX_EDITOR
             if (_virtualData && CollisionData == _virtualData)
             {
-                CollisionData = null;
+                // Save the baked asset reference instead (or none)
+                CollisionData = _bakedCollision;
                 return true;
             }
+#endif
             return false;
         }
 
         /// <summary>
-        /// Restores the runtime-generated collision data detached with <see cref="DetachRuntimeCollision"/>.
+        /// Restores the in-memory preview collision detached with <see cref="DetachRuntimeCollision"/>.
         /// </summary>
         public void RestoreRuntimeCollision()
         {
-            if (_virtualData && CollisionData == null)
+#if FLAX_EDITOR
+            if (_virtualData && !IsBakedUpToDate)
                 CollisionData = _virtualData;
+#endif
         }
 
         /// <inheritdoc />
@@ -342,7 +414,11 @@ namespace ConvexBrush
         public bool SyncChanges()
         {
             var hash = ComputeHash(_faces);
-            bool collisionUpToDate = !IsDuringPlay || (hash == _cookedHash && _virtualData && CollisionData == _virtualData);
+#if FLAX_EDITOR
+            bool collisionUpToDate = !IsDuringPlay || (hash == _cookedHash && CollisionData && (CollisionData == _virtualData || CollisionData == _bakedCollision));
+#else
+            bool collisionUpToDate = !IsDuringPlay || CollisionData == _bakedCollision;
+#endif
             if (_geometry != null && hash == _geometryHash && collisionUpToDate)
                 return false;
             if (_invalidLogged && hash == _geometryHash)
@@ -369,13 +445,23 @@ namespace ConvexBrush
 
         private static int ComputeHash(BrushFace[] faces)
         {
-            var hash = new HashCode();
-            if (faces != null)
+            // FNV-1a over raw float bits (HashCode is randomized per process so it can't be stored)
+            unchecked
             {
-                for (int i = 0; i < faces.Length; i++)
-                    hash.Add(faces[i]);
+                uint hash = 2166136261;
+                if (faces != null)
+                {
+                    for (int i = 0; i < faces.Length; i++)
+                    {
+                        var f = faces[i];
+                        hash = (hash ^ (uint)BitConverter.SingleToInt32Bits(f.Normal.X)) * 16777619;
+                        hash = (hash ^ (uint)BitConverter.SingleToInt32Bits(f.Normal.Y)) * 16777619;
+                        hash = (hash ^ (uint)BitConverter.SingleToInt32Bits(f.Normal.Z)) * 16777619;
+                        hash = (hash ^ (uint)BitConverter.SingleToInt32Bits(f.Distance)) * 16777619;
+                    }
+                }
+                return (int)hash;
             }
-            return hash.ToHashCode();
         }
     }
 }

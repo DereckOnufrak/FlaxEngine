@@ -60,12 +60,19 @@ namespace ConvexBrush
 
         private void OnSceneSaving(Scene scene, Guid sceneId)
         {
-            // Runtime-cooked collision lives in a virtual asset (not on disk) so don't save a reference to it
+            // Preview collision lives in a virtual asset (not on disk) so don't save a reference to it
+            int notBaked = 0;
             foreach (var brush in Level.GetActors<ConvexBrushCollider>())
             {
-                if (brush.Scene == scene && brush.DetachRuntimeCollision())
+                if (brush.Scene != scene)
+                    continue;
+                if (brush.DetachRuntimeCollision())
                     _detached.Add(brush);
+                if (!brush.IsBakedUpToDate)
+                    notBaked++;
             }
+            if (notBaked != 0)
+                Editor.LogWarning($"Scene '{scene.Name}' has {notBaked} Convex Brush Collider(s) without up-to-date baked collision. Select them and use Bake Collision (Brush Tools), otherwise the game will have missing/outdated collision.");
         }
 
         private void OnSceneSaveEnd(Scene scene, Guid sceneId)

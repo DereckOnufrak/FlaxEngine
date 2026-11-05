@@ -21,6 +21,7 @@ namespace ConvexBrush
 
             var group = layout.Group("Brush Tools");
             _status = group.Label(string.Empty);
+            group.Button("Bake Collision", "Bakes the brush into a Collision Data asset (Content/" + ConvexBrushBaker.BakeFolder + ") used by the game. Re-bake after editing faces.").Button.Clicked += OnBake;
             group.Button("Add Face Facing Camera", "Adds a new face oriented towards the editor camera, touching the current hull. Select it in the viewport and move it inwards to cut the brush.").Button.Clicked += OnAddFaceFacingCamera;
             group.Button("Reset To Box", "Resets the brush faces into a box.").Button.Clicked += OnResetToBox;
             group.Label("Tip: click the brush, then click a face to select it.\nMove = push/pull face, Rotate = tilt face.\nRight-click a face to duplicate (bevel) or remove it.", TextAlignment.Near);
@@ -46,9 +47,22 @@ namespace ConvexBrush
                 return;
             }
             var geometry = brush.Geometry;
-            _status.Label.Text = geometry.IsValid
-                                 ? $"Faces: {brush.FacesCount}, Vertices: {geometry.Vertices.Length}"
-                                 : "Invalid brush: faces don't form a closed convex volume";
+            if (!geometry.IsValid)
+            {
+                _status.Label.Text = "Invalid brush: faces don't form a closed convex volume";
+                return;
+            }
+            string bake = brush.IsBakedUpToDate ? "baked" : brush.BakedCollision ? "bake OUT OF DATE" : "NOT baked";
+            _status.Label.Text = $"Faces: {brush.FacesCount}, Vertices: {geometry.Vertices.Length}, {bake}";
+        }
+
+        private void OnBake()
+        {
+            foreach (var value in Values)
+            {
+                if (value is ConvexBrushCollider brush && brush)
+                    ConvexBrushBaker.Bake(brush, Presenter.Undo, _ => UpdateStatus());
+            }
         }
 
         private void OnAddFaceFacingCamera()
